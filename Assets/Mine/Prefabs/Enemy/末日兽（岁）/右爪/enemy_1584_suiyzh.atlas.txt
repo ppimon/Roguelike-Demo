@@ -1,0 +1,146 @@
+
+enemy_1584_suiyzh.png
+size: 1764,898
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Yzh_Finger_a
+  rotate: false
+  xy: 504, 2
+  size: 202, 78
+  orig: 202, 78
+  offset: 0, 0
+  index: -1
+Yzh_Finger_b
+  rotate: false
+  xy: 1116, 12
+  size: 241, 145
+  orig: 241, 145
+  offset: 0, 0
+  index: -1
+Yzh_Finger_c
+  rotate: false
+  xy: 2, 132
+  size: 258, 244
+  orig: 258, 244
+  offset: 0, 0
+  index: -1
+Yzh_Finger_d
+  rotate: true
+  xy: 1359, 23
+  size: 134, 292
+  orig: 134, 292
+  offset: 0, 0
+  index: -1
+Yzh_Finger_e
+  rotate: true
+  xy: 909, 69
+  size: 119, 205
+  orig: 124, 205
+  offset: 0, 0
+  index: -1
+Yzh_Fire_a
+  rotate: true
+  xy: 1122, 159
+  size: 737, 395
+  orig: 742, 395
+  offset: 5, 0
+  index: -1
+Yzh_Fire_aa
+  rotate: false
+  xy: 1519, 189
+  size: 220, 193
+  orig: 220, 193
+  offset: 0, 0
+  index: -1
+Yzh_Fire_aaa
+  rotate: true
+  xy: 2, 15
+  size: 115, 159
+  orig: 115, 159
+  offset: 0, 0
+  index: -1
+Yzh_Fire_b
+  rotate: false
+  xy: 262, 37
+  size: 240, 339
+  orig: 244, 346
+  offset: 0, 0
+  index: -1
+Yzh_Fire_d
+  rotate: true
+  xy: 909, 190
+  size: 252, 207
+  orig: 253, 207
+  offset: 1, 0
+  index: -1
+Yzh_Forearm
+  rotate: false
+  xy: 540, 444
+  size: 580, 452
+  orig: 580, 452
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_a
+  rotate: false
+  xy: 1653, 74
+  size: 109, 113
+  orig: 109, 113
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_b
+  rotate: false
+  xy: 783, 35
+  size: 56, 45
+  orig: 56, 45
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_c
+  rotate: true
+  xy: 504, 341
+  size: 35, 28
+  orig: 35, 28
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_d
+  rotate: false
+  xy: 163, 35
+  size: 93, 95
+  orig: 93, 95
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_fire_a
+  rotate: true
+  xy: 2, 378
+  size: 518, 536
+  orig: 518, 536
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_fire_aa
+  rotate: false
+  xy: 708, 35
+  size: 73, 45
+  orig: 73, 45
+  offset: 0, 0
+  index: -1
+Yzh_Forearm_fire_b
+  rotate: true
+  xy: 1519, 637
+  size: 259, 204
+  orig: 259, 204
+  offset: 0, 0
+  index: -1
+Yzh_Hand
+  rotate: false
+  xy: 540, 82
+  size: 367, 360
+  orig: 367, 360
+  offset: 0, 0
+  index: -1
+Yzh_Shadow
+  rotate: true
+  xy: 1519, 384
+  size: 251, 195
+  orig: 259, 201
+  offset: 0, 0
+  index: -1

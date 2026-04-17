@@ -1,0 +1,188 @@
+
+enemy_1582_suisho.png
+size: 2017,1035
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+He_Hair
+  rotate: false
+  xy: 1386, 18
+  size: 362, 308
+  orig: 362, 308
+  offset: 0, 0
+  index: -1
+He_Hair_La
+  rotate: true
+  xy: 999, 326
+  size: 204, 142
+  orig: 204, 142
+  offset: 0, 0
+  index: -1
+He_Hair_Ra
+  rotate: false
+  xy: 1750, 902
+  size: 265, 131
+  orig: 265, 131
+  offset: 0, 0
+  index: -1
+He_Hair_a
+  rotate: true
+  xy: 1818, 478
+  size: 140, 197
+  orig: 144, 197
+  offset: 4, 0
+  index: -1
+He_Hair_b
+  rotate: true
+  xy: 1417, 624
+  size: 74, 177
+  orig: 74, 177
+  offset: 0, 0
+  index: -1
+He_Head
+  rotate: false
+  xy: 657, 20
+  size: 345, 287
+  orig: 345, 287
+  offset: 0, 0
+  index: -1
+He_Head_top
+  rotate: false
+  xy: 1868, 18
+  size: 132, 112
+  orig: 132, 112
+  offset: 0, 0
+  index: -1
+He_L_Eyebrow
+  rotate: true
+  xy: 680, 532
+  size: 501, 384
+  orig: 501, 384
+  offset: 0, 0
+  index: -1
+He_L_Horn
+  rotate: false
+  xy: 1417, 700
+  size: 166, 333
+  orig: 184, 333
+  offset: 0, 0
+  index: -1
+He_L_light
+  rotate: true
+  xy: 1750, 2
+  size: 128, 46
+  orig: 128, 46
+  offset: 0, 0
+  index: -1
+He_L_line
+  rotate: false
+  xy: 1818, 132
+  size: 192, 344
+  orig: 192, 344
+  offset: 0, 0
+  index: -1
+He_Mouth
+  rotate: false
+  xy: 1004, 9
+  size: 380, 315
+  orig: 380, 315
+  offset: 0, 0
+  index: -1
+He_Mouth_U
+  rotate: true
+  xy: 1798, 10
+  size: 120, 68
+  orig: 120, 68
+  offset: 0, 0
+  index: -1
+He_Mouth_a
+  rotate: false
+  xy: 1585, 749
+  size: 82, 94
+  orig: 82, 94
+  offset: 0, 0
+  index: -1
+He_R_Eyebrow
+  rotate: false
+  xy: 2, 5
+  size: 653, 302
+  orig: 653, 302
+  offset: 0, 0
+  index: -1
+He_R_Horn
+  rotate: true
+  xy: 680, 311
+  size: 219, 317
+  orig: 219, 317
+  offset: 0, 0
+  index: -1
+He_R_line
+  rotate: false
+  xy: 1417, 345
+  size: 399, 273
+  orig: 399, 273
+  offset: 0, 0
+  index: -1
+He_Ring
+  rotate: false
+  xy: 2, 309
+  size: 676, 724
+  orig: 676, 724
+  offset: 0, 0
+  index: -1
+He_Ring_La
+  rotate: true
+  xy: 1750, 291
+  size: 52, 61
+  orig: 52, 61
+  offset: 0, 0
+  index: -1
+He_Ring_Laa
+  rotate: true
+  xy: 1750, 218
+  size: 34, 36
+  orig: 34, 36
+  offset: 0, 0
+  index: -1
+He_Ring_l
+  rotate: true
+  xy: 1143, 328
+  size: 237, 254
+  orig: 237, 254
+  offset: 0, 0
+  index: -1
+He_Ring_ra
+  rotate: false
+  xy: 1750, 254
+  size: 50, 35
+  orig: 50, 35
+  offset: 0, 0
+  index: -1
+He_Ring_raa
+  rotate: true
+  xy: 1066, 538
+  size: 27, 22
+  orig: 27, 22
+  offset: 0, 0
+  index: -1
+He_Ya
+  rotate: false
+  xy: 1750, 620
+  size: 242, 280
+  orig: 242, 280
+  offset: 0, 0
+  index: -1
+He_Yb
+  rotate: false
+  xy: 1596, 845
+  size: 109, 188
+  orig: 109, 188
+  offset: 0, 0
+  index: -1
+He_Yc
+  rotate: true
+  xy: 1066, 567
+  size: 466, 349
+  orig: 466, 349
+  offset: 0, 0
+  index: -1
