@@ -121,18 +121,6 @@ public class RoomCombatManager : MonoBehaviour
                 usedSpawnPoints.Add(spawnPos);
                 GameObject enemyObj = Instantiate(enemyData.prefab, spawnPos, Quaternion.identity, transform);
 
-                // --- 【索敌】 ---
-                // 1. 找到场景中的玩家 (确保你的玩家 Tag 设置为 "Player")
-                GameObject player = GameObject.FindWithTag("Player");
-
-                // 2. 获取敌人身上的 AI 脚本并赋值
-                var ai = enemyObj.GetComponent<EnemyAI_NormalMelee>();
-                if (ai != null && player != null)
-                {
-                    ai.player = player.transform;
-                    ai.currentState = EnemyAI_NormalMelee.State.Wandering; // 强制进入游荡状态
-                }
-
                 // 监听怪物死亡
                 EnemyStats stats = enemyObj.GetComponent<EnemyStats>();
                 if (stats != null)

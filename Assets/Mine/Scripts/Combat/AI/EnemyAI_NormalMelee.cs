@@ -66,6 +66,20 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
     void Start()
     {
+        //生成时自动寻找玩家
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+            }
+            else
+            {
+                Debug.LogError($"{gameObject.name} 找不到 Tag 为 Player 的物体！请检查场景！");
+            }
+        }
+
         if (skeletonAnimation != null)
         {
             skeletonAnimation.AnimationState.Event += HandleSpineEvent;
