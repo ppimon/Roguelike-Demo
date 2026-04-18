@@ -12,6 +12,5 @@ public class EnemyStats : CharacterStats
     {
         base.Die();
         // 敌人死亡逻辑：播放动画、掉落物品、销毁物体
-        Destroy(gameObject);
     }
 }
