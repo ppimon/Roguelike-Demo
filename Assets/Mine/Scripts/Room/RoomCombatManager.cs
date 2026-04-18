@@ -34,6 +34,12 @@ public class RoomCombatManager : MonoBehaviour
         roomBounds.isTrigger = true;
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+            Debug.Log($"当前存活列表人数: {aliveEnemies.Count}");
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (!combatStarted && !combatCleared && collision.CompareTag("Player"))
@@ -88,7 +94,6 @@ public class RoomCombatManager : MonoBehaviour
     {
         if (remainingDifficulty <= 0 || allowedEnemies.Count == 0)
         {
-            Debug.Log("1");
             EndCombat();
             return;
         }
@@ -121,6 +126,7 @@ public class RoomCombatManager : MonoBehaviour
             {
                 usedSpawnPoints.Add(spawnPos);
                 GameObject enemyObj = Instantiate(enemyData.prefab, spawnPos, Quaternion.identity, transform);
+
 
                 // 监听怪物死亡
                 EnemyStats stats = enemyObj.GetComponent<EnemyStats>();
@@ -233,21 +239,17 @@ public class RoomCombatManager : MonoBehaviour
     /// </summary>
     void OnEnemyDied(GameObject enemy)
     {
-        Debug.Log("2"); 
         aliveEnemies.Remove(enemy);
         if (aliveEnemies.Count == 0)
         {
-            Debug.Log("3");
             // 当前波次死光了
             if (remainingDifficulty > 0 && currentWave < maxWaves)
             {
                 currentWave++;
                 Invoke("SpawnWave", 1.5f); // 延迟 1.5 秒刷下一波
-                Debug.Log("4");
             }
             else
             {
-                Debug.Log("5");
                 EndCombat();
             }
         }

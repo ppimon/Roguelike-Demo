@@ -18,7 +18,7 @@ GameObject:
   - component: {fileID: 224100621493894250}
   m_Layer: 0
   m_Name: "\u865A\u5352_\u6536\u5272\u8005"
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -352,7 +352,7 @@ GameObject:
   - component: {fileID: 3720911939853716162}
   m_Layer: 0
   m_Name: Hitbox_Short
-  m_TagString: Untagged
+  m_TagString: EnemyHitbox
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -478,7 +478,7 @@ GameObject:
   - component: {fileID: 512086641224393049}
   m_Layer: 0
   m_Name: Enemy_1001
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -512,7 +512,7 @@ GameObject:
   - component: {fileID: 7940672784548892277}
   m_Layer: 0
   m_Name: Hitbox_Mid
-  m_TagString: Untagged
+  m_TagString: EnemyHitbox
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
