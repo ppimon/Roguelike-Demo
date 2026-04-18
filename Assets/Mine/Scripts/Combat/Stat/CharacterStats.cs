@@ -129,6 +129,5 @@ public class CharacterStats : MonoBehaviour, IDamageable
     {
         Debug.Log(transform.name + " À¿Õˆ¡À.");
         OnDeath?.Invoke();
-        Destroy(gameObject); 
     }
 }

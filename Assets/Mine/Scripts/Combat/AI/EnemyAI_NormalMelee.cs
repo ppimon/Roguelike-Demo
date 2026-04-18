@@ -6,7 +6,7 @@ using Spine;
 [AddComponentMenu("自定义 AI / 普通敌人：近战")]
 public class EnemyAI_NormalMelee : MonoBehaviour
 {
-    public enum State { Idle, Wandering, Chasing, Attacking, Dodging, Staggered, Broken }
+    public enum State { Idle, Wandering, Chasing, Attacking, Dodging, Staggered, Broken, Dead }
 
     [Header("--- 普通敌人：近战 ---")]
     public State currentState = State.Idle;
@@ -26,6 +26,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     // 【新增】受击与击破动画名
     public string hitAnim = "Hit";
     public string brokenAnim = "Broken_Loop";
+    public string deathAnim = "Die";
 
     [Header("视野与环境检测")]
     public float visionRange = 6f;
@@ -346,6 +347,17 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         PlayAnimation(animToPlay, false);
     }
 
+    public void TriggerDeath()
+    {
+        StopCurrentActions();
+        currentState = State.Dead;
+        PlayAnimation(deathAnim, false, true);  // 强制播放死亡动画（不循环）
+
+        // 重要：取消所有输入响应
+        rb.velocity = Vector2.zero;
+        rb.isKinematic = true;  // 防止死亡后还受物理影响
+    }
+
     void HandleSpineEvent(TrackEntry trackEntry, Spine.Event e)
     { /* ...原逻辑保持不变... */
         if (e.Data.Name == "OnAttack")
@@ -392,6 +404,11 @@ public class EnemyAI_NormalMelee : MonoBehaviour
                 // 为了防止怪物刚出硬直瞬间秒开攻击，给它重置一下攻击时间
                 lastAttackTime = Time.time;
             }
+        }
+        else if (trackEntry.Animation.Name == deathAnim)
+        {
+            Destroy(gameObject);   // 动画播完才销毁
+            Debug.Log(transform.name + " 死亡动画播放完毕，已销毁。");
         }
     }
 }
