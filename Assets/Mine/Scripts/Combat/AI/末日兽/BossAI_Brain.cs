@@ -15,6 +15,26 @@ public class BossAI_Brain : MonoBehaviour
     [Tooltip("防止左右爪子同时使用砸地技能")]
     public bool isSmashingGround = false;
 
+    private void Start()
+    {
+        // 1. 自动查找玩家对象 (假设玩家 Tag 为 "Player")
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+            }
+        }
+
+        // 2. 自动查找玩家脚底的检测点
+        // 方案 A：如果检测点是玩家的子物体且命名固定（例如 "GroundCheck"）
+        if (player != null && playerGroundCheck == null)
+        {
+            playerGroundCheck = player.Find("GroundCheck");
+        }
+    }
+
     /// <summary>
     /// 全局检测玩家当前是否站在地面上
     /// </summary>

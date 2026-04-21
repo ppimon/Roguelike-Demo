@@ -36,6 +36,8 @@ public class BossAI_Claw : MonoBehaviour
     public Vector2 rangeSize = new Vector2(6f, 4f); // 索敌框尺寸
     public Vector2 rangeOffset = Vector2.zero;      // 索敌框偏移量
 
+    [HideInInspector] public bool isIntroFinished = false; // 入场演出是否结束
+
     // 内部状态计时器
     private bool playerInSwipeRange = false;
     private float skill1TickTimer = 0f;
@@ -68,6 +70,9 @@ public class BossAI_Claw : MonoBehaviour
 
     void Update()
     {
+        // 如果入场演出没结束，不进行判定
+        if (!isIntroFinished) return;
+
         BossStats stats = brain.GetComponent<BossStats>();
         if (stats != null && stats.isBroken) return; // 破防状态下停止一切行动
         if (isAttacking) return;

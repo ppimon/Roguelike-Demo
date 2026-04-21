@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: "\u865A\u5352_\u6536\u5272\u8005"
   m_EditorClassIdentifier: 
   enemyName: "\u865A\u5352_\u6536\u5272\u8005"
-  prefab: {fileID: 3295650741077354127, guid: b91a871571bb29948a63953dcef9fe2a, type: 3}
+  prefab: {fileID: 890878477779541587, guid: 72efb075fc75fe64e874af67212a25ea, type: 3}
   rank: 0
   faction: 0
   difficultyCost: 1

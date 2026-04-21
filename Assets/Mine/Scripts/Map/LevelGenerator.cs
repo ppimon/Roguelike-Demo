@@ -15,6 +15,14 @@ public class LevelGenerator : MonoBehaviour
     public int minCorridorLength = 2;
     public int maxCorridorLength = 5;
 
+    [Header("Boss 与 难度配置")]
+    public Room bossRoomPrefab;
+    public int totalFloorDifficulty = 100; // 本层总难度预算
+    public int baseRoomDifficulty = 5;     // 每个房间的保底难度
+
+    [Header("难度权重")]
+    public float eliteDifficultyMultiplier = 2.5f;
+
     // --- 核心改动：不再依赖LayerMask，改用手动列表记录 ---
     // 使用 Rect (矩形) 来存储已占用区域，比 Physics2D 更快更准
     private List<Rect> occupiedRects = new List<Rect>();
@@ -44,8 +52,13 @@ public class LevelGenerator : MonoBehaviour
             iterations++;
             AttemptSpawnBranch();
         }
+        // 3. 生成 Boss 房
+        SpawnBossRoom();
 
-        // 3. 封口
+        // 4. 分配难度
+        DistributeDifficulty();
+
+        // 5. 封口
         foreach (var r in allSpawnedObjects) r.CloseUnconnectedExits();
     }
 
@@ -181,6 +194,80 @@ public class LevelGenerator : MonoBehaviour
         }
 
         return null;
+    }
+
+    void SpawnBossRoom()
+    {
+        if (bossRoomPrefab == null) return;
+
+        // 倒序遍历，从最边缘的分支找起
+        for (int i = allSpawnedObjects.Count - 1; i >= 0; i--)
+        {
+            Room edgeRoom = allSpawnedObjects[i];
+            if (edgeRoom == allSpawnedObjects[0]) continue; // 别连在起点上
+
+            var freeExits = edgeRoom.GetFreeExits();
+            if (freeExits.Count > 0)
+            {
+                RoomExit spawnExit = freeExits[0];
+                Direction oppositeDir = GetOppositeDirection(spawnExit.direction);
+
+                // 巧妙利用你写好的 TryCreateRoom 进行防重叠生成！
+                Room[] bossPool = new Room[] { bossRoomPrefab };
+                Room bossRoom = TryCreateRoom(bossPool, oppositeDir, spawnExit.point, new List<Rect>());
+
+                if (bossRoom != null)
+                {
+                    bossRoom.gameObject.name = "Boss_Room";
+                    bossRoom.GetFreeExitWithDirection(oppositeDir).isOccupied = true;
+                    spawnExit.isOccupied = true;
+
+                    allSpawnedObjects.Add(bossRoom);
+                    RegisterRoom(bossRoom);
+                    break; // 成功生成，立刻跳出
+                }
+            }
+        }
+    }
+
+    void DistributeDifficulty()
+    {
+        // 筛选出战斗房（不含起点、连廊、Boss房）
+        List<RoomCombatManager> combatRooms = new List<RoomCombatManager>();
+        float totalWeight = 0f;
+
+        // 1. 收集所有战斗房，并计算总权重
+        foreach (var room in allSpawnedObjects)
+        {
+            if (room.gameObject.name == "Boss_Room") continue;
+
+            var combatManager = room.GetComponent<RoomCombatManager>();
+            if (combatManager != null && room.roomType != Room.RoomType.Reward && room.roomType != Room.RoomType.Shop)
+            {
+                combatRooms.Add(combatManager);
+                // 普通房权重 1，精英房权重 2.5
+                totalWeight += (room.roomType == Room.RoomType.Elite) ? eliteDifficultyMultiplier : 1.0f;
+            }
+        }
+
+        if (combatRooms.Count == 0 || totalWeight <= 0) return;
+
+        // 2. 按权重比例切分蛋糕
+        int remainingBudget = totalFloorDifficulty;
+
+        for (int i = 0; i < combatRooms.Count; i++)
+        {
+            var cr = combatRooms[i];
+            float myWeight = (cr.room.roomType == Room.RoomType.Elite) ? eliteDifficultyMultiplier : 1.0f;
+
+            // 如果是最后一个房间，把剩下的全给它，防止取整导致的零头丢失
+            int allocateAmount = (i == combatRooms.Count - 1)
+                                 ? remainingBudget
+                                 : Mathf.RoundToInt((myWeight / totalWeight) * totalFloorDifficulty);
+
+            cr.roomDifficultyBudget = allocateAmount;
+            remainingBudget -= allocateAmount;
+        }
     }
 
     // --- 纯数学辅助方法 ---

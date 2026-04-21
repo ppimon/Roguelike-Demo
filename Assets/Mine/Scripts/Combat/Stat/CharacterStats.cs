@@ -13,6 +13,10 @@ public class CharacterStats : MonoBehaviour, IDamageable
     public Stat defense;          // 物理防御
     public Stat magicResistance;  // 魔法抗性
 
+    [Header("状态标记")]
+    public bool isInvincible = false; // 无敌状态开关
+    public bool isDead { get; protected set; } // 死亡标记
+
     [Header("隐藏属性：抗打断与韧性")]
     [Range(0, 5)]
     [Tooltip("抗打断等级 (0: 纸糊, 1: 普通, 5: 霸体)")]
@@ -62,6 +66,8 @@ public class CharacterStats : MonoBehaviour, IDamageable
     // 【修改】接收完整的 AttackImpact 数据
     public virtual void TakeDamage(AttackImpact impact)
     {
+        if (isInvincible) return; // 如果无敌或已死亡，直接无视伤害
+
         // 1. 伤害计算与减伤逻辑
         float finalDamage = impact.damage;
 
@@ -78,6 +84,7 @@ public class CharacterStats : MonoBehaviour, IDamageable
 
         if (currentHealth <= 0)
         {
+            isDead = true; // 立即标记死亡
             Die();
             return;
         }

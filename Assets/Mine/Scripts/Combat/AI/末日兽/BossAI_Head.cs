@@ -24,6 +24,8 @@ public class BossAI_Head : MonoBehaviour
     public Vector2 rangeSize = new Vector2(4f, 4f); // 索敌框尺寸
     public Vector2 rangeOffset = Vector2.zero;      // 索敌框偏移量
 
+    [HideInInspector] public bool isIntroFinished = false; // 入场演出是否结束
+
     // 状态记录
     private bool playerInRange = false;   // 玩家是否在啃咬范围内
     private float timeInRange = 0f;       // 玩家在范围内的累计时间
@@ -35,9 +37,6 @@ public class BossAI_Head : MonoBehaviour
         // 绑定 Spine 事件
         spineAnim.AnimationState.Event += HandleSpineEvent;
         spineAnim.AnimationState.Complete += HandleSpineComplete;
-
-        // 初始状态进入待机
-        spineAnim.AnimationState.SetAnimation(0, "Idle", true);
 
         // 订阅大脑的破防事件：破防时强制打断当前行动
         if (bossBrain != null) bossBrain.OnBroken += ForceInterrupt;
@@ -51,6 +50,8 @@ public class BossAI_Head : MonoBehaviour
 
     void Update()
     {
+        // 如果入场演出还没结束，不要进行任何思考
+        if (!isIntroFinished) return;
         // 如果 Boss 被击破，或者头部正在攻击，停止思考
         if (bossBrain != null && bossBrain.isBroken) return;
         if (isAttacking) return;

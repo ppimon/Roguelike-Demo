@@ -330,11 +330,22 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     IEnumerator DodgeRoutine()
     { /* ...原逻辑保持不变... */
         currentState = State.Dodging;
+        myStats.isInvincible = true; // 开启无敌
         lastDodgeTime = Time.time;
         PlayAnimation(dodgeAnim, false, true);
         rb.velocity = new Vector2(-facingDirection * dodgeSpeed, rb.velocity.y);
+        float timer = 0;
+        while (timer < dodgeDuration)
+        {
+            timer += Time.deltaTime;
+            // 速度随着时间递减 (Lerp)，模拟双脚摩擦地面的感觉，消除漂移感
+            float currentXVel = Mathf.Lerp(-facingDirection * dodgeSpeed, 0f, timer / dodgeDuration);
+            rb.velocity = new Vector2(currentXVel, rb.velocity.y);
+            yield return null;
+        }
         yield return new WaitForSeconds(dodgeDuration);
         rb.velocity = new Vector2(0, rb.velocity.y);
+        myStats.isInvincible = false; // 关闭无敌
         currentState = State.Chasing;
     }
 

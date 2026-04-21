@@ -814,7 +814,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
@@ -1059,6 +1059,10 @@ MonoBehaviour:
   maxRooms: 5
   minCorridorLength: 5
   maxCorridorLength: 10
+  bossRoomPrefab: {fileID: 4660903299295537878, guid: f63f8901d778e20429b6db0e7d671e41, type: 3}
+  totalFloorDifficulty: 100
+  baseRoomDifficulty: 5
+  eliteDifficultyMultiplier: 2.5
 --- !u!4 &1335516601
 Transform:
   m_ObjectHideFlags: 0
@@ -2676,9 +2680,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2093630976}
     m_Modifications:
+    - target: {fileID: 961242324340066375, guid: 37110d440dae4a7429157cc593703e03, type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 6200000, guid: de69aa9b60ec21743ab8f3a46415ea39, type: 2}
     - target: {fileID: 3424690490655451350, guid: 37110d440dae4a7429157cc593703e03, type: 3}
       propertyPath: m_Mesh
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3632192539177601956, guid: 37110d440dae4a7429157cc593703e03, type: 3}
+      propertyPath: m_Name
+      value: GroundCheck
+      objectReference: {fileID: 0}
+    - target: {fileID: 3632192539177601956, guid: 37110d440dae4a7429157cc593703e03, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5284098603127246340, guid: 37110d440dae4a7429157cc593703e03, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2720,9 +2736,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5633222197609803390, guid: 37110d440dae4a7429157cc593703e03, type: 3}
+      propertyPath: damage.baseValue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8176116110606608756, guid: 37110d440dae4a7429157cc593703e03, type: 3}
       propertyPath: m_Name
       value: Sakiko
+      objectReference: {fileID: 0}
+    - target: {fileID: 8675670858942219373, guid: 37110d440dae4a7429157cc593703e03, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

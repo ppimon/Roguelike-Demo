@@ -4,8 +4,13 @@ using System.Linq;
 
 public class Room : MonoBehaviour
 {
+    public enum RoomType { Normal, Elite, Reward, Shop, Boss }
+
     [Header("出入口配置")]
     public RoomExit[] exits; // 在Inspector中配置每个口的朝向和墙体
+
+    [Header("房间定位")]
+    public RoomType roomType = RoomType.Normal;
 
     public enum Direction
     {

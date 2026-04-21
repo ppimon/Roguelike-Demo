@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7880511618875103439}
-  m_Layer: 6
-  m_Name: GrundCheck
+  m_Layer: 0
+  m_Name: GroundCheck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -62,7 +62,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8176116110606608756}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 19.09, z: 0}
   m_LocalScale: {x: 0.08, y: 0.08, z: 0.08}
   m_ConstrainProportionsScale: 1
@@ -164,11 +164,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 70
   damage:
-    baseValue: 100
+    baseValue: 1
   defense:
     baseValue: 5
   magicResistance:
     baseValue: 3
+  isInvincible: 0
   interruptResistance: 1
   hasToughnessBar: 0
   maxToughness: 100
@@ -231,7 +232,7 @@ Rigidbody2D:
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: de69aa9b60ec21743ab8f3a46415ea39, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -288,7 +289,7 @@ GameObject:
   - component: {fileID: 3688712665406022633}
   - component: {fileID: 7910846092059959203}
   - component: {fileID: 4792978114645387873}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: AttackHitBox
   m_TagString: PlayerHitbox
   m_Icon: {fileID: 0}

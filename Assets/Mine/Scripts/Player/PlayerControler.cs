@@ -33,6 +33,7 @@ public class PlayerController : MonoBehaviour
     private bool isAttacking;
     private bool isJumping; // 新增：专门记录是否处于起跳动作中
     private float horizontalInput;
+    private bool canCancelAttack = false; // 是否进入了可打断区间
 
     void Start()
     {
@@ -53,16 +54,26 @@ public class PlayerController : MonoBehaviour
             isJumping = false;
         }
 
-        // 2. 跳跃输入 (允许在地面跳，或者二段跳逻辑可在此扩展)
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        // 如果正在攻击且处于“可取消”阶段，且玩家有了移动或跳跃输入
+        if (isAttacking && canCancelAttack)
         {
-            PerformJump();
+            if (Input.GetButtonDown("Jump") || Mathf.Abs(horizontalInput) > 0.1f)
+            {
+                InterruptAttack(); // 强行打断
+            }
         }
 
-        // 3. 攻击输入
-        if (Input.GetMouseButtonDown(0) && !isAttacking)
+        // 只有在没攻击时，或者攻击已经进入可取消阶段时，才处理新输入
+        if (!isAttacking || canCancelAttack)
         {
-            PerformAttack();
+            if (Input.GetButtonDown("Jump") && isGrounded)
+            {
+                PerformJump();
+            }
+            else if (Input.GetMouseButtonDown(0) && !isAttacking)
+            {
+                PerformAttack();
+            }
         }
 
         // 4. 动画状态管理
@@ -77,7 +88,8 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        rb.velocity = new Vector2(horizontalInput * moveSpeed, rb.velocity.y);
+        float currentSpeed = isAttacking ? moveSpeed * 0f : moveSpeed;
+        rb.velocity = new Vector2(horizontalInput * currentSpeed, rb.velocity.y);
     }
 
     void PerformJump()
@@ -96,10 +108,20 @@ public class PlayerController : MonoBehaviour
     void PerformAttack()
     {
         isAttacking = true;
+        canCancelAttack = false; // 攻击开始时，锁定打断
 
         float speedMultiplier = (myStats != null) ? myStats.attackSpeed.GetValue() : 1f;
         var track = skeletonAnimation.AnimationState.SetAnimation(0, attackAnim, false);
         track.TimeScale = speedMultiplier;
+    }
+
+    // 打断攻击的方法
+    void InterruptAttack()
+    {
+        isAttacking = false;
+        canCancelAttack = false;
+        // 注意：这里不需要手动 ClearTrack，后续的 PerformJump 或 HandleMovementAnimation 
+        // 会通过 SetAnimation 自动覆盖当前动画
     }
 
     void HandleMovementAnimation()
@@ -171,6 +193,10 @@ public class PlayerController : MonoBehaviour
             // 触发事件时，启动一个协程来开启判定盒
             StartCoroutine(HitboxRoutine());
         }
+        else if (e.Data.Name == "CanCancel")
+        {
+            canCancelAttack = true;
+        }
     }
 
     // 控制判定盒开启与关闭的协程
@@ -192,6 +218,7 @@ public class PlayerController : MonoBehaviour
         if (trackEntry.Animation.Name == attackAnim)
         {
             isAttacking = false;
+            canCancelAttack = false; // 彻底播完，重置状态
             // 恢复动画速度，防止攻速影响了走路
             trackEntry.TimeScale = 1f;
         }
