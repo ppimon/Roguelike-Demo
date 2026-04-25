@@ -1,34 +1,38 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 using Spine.Unity;
 using Spine;
+using Unity.VisualScripting;
 
-[AddComponentMenu("×Ô¶¨Òå AI / ÆÕÍ¨µĞÈË£º½üÕ½")]
+[AddComponentMenu("è‡ªå®šä¹‰ AI / æ™®é€šæ•Œäººï¼šè¿‘æˆ˜")]
 public class EnemyAI_NormalMelee : MonoBehaviour
 {
     public enum State { Idle, Wandering, Chasing, Attacking, Dodging, Staggered, Broken, Dead }
 
-    [Header("--- ÆÕÍ¨µĞÈË£º½üÕ½ ---")]
+    [Header("--- æ™®é€šæ•Œäººï¼šè¿‘æˆ˜ ---")]
     public State currentState = State.Idle;
 
-    [Header("×é¼şÒıÓÃ")]
+    [Header("AIæ¨¡å¼")]
+    public AIType aiType = AIType.Scripted;
+
+    [Header("ç»„ä»¶å¼•ç”¨")]
     public Rigidbody2D rb;
     public EnemyStats myStats;
     public Transform player;
     public SkeletonAnimation skeletonAnimation;
 
-    [Header("¶¯»­Ãû³ÆÅäÖÃ")]
+    [Header("åŠ¨ç”»åç§°é…ç½®")]
     public string idleAnim = "Idle";
     public string runAnim = "Run_Loop";
     public string dodgeAnim = "Dodge";
     public string attack1Anim = "Attack_1";
     public string attack2Anim = "Attack_2";
-    // ¡¾ĞÂÔö¡¿ÊÜ»÷Óë»÷ÆÆ¶¯»­Ãû
+    // ã€æ–°å¢ã€‘å—å‡»ä¸å‡»ç ´åŠ¨ç”»å
     public string hitAnim = "Hit";
     public string brokenAnim = "Broken_Loop";
     public string deathAnim = "Die";
 
-    [Header("ÊÓÒ°Óë»·¾³¼ì²â")]
+    [Header("è§†é‡ä¸ç¯å¢ƒæ£€æµ‹")]
     public float visionRange = 6f;
     public float loseAggroDuration = 3f;
     public LayerMask obstacleLayer;
@@ -39,7 +43,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     private float currentAggroTimer = 0f;
     private bool hasAggro = false;
 
-    [Header("ÓÎµ´×´Ì¬²ÎÊı")]
+    [Header("æ¸¸è¡çŠ¶æ€å‚æ•°")]
     public float wanderSpeed = 1.5f;
     public float minIdleTime = 1f;
     public float maxIdleTime = 3f;
@@ -47,27 +51,62 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     public float maxWanderTime = 4f;
     private float stateTimer = 0f;
 
-    [Header("ÒÆ¶¯ÓëÉÁ±Ü²ÎÊı")]
+    [Header("ç§»åŠ¨ä¸é—ªé¿å‚æ•°")]
     public float moveSpeed = 3f;
     public float dodgeSpeed = 10f;
     public float dodgeDuration = 0.2f;
     public float dodgeCooldown = 5f;
 
-    [Header("ÅĞ¶¨ÉèÖÃ")]
+    [Header("åˆ¤å®šè®¾ç½®")]
     public CombatContactSender shortAttackHitbox;
     public CombatContactSender midAttackHitbox;
     public Vector2 attackDecisionOffset = new Vector2(0.5f, 0.5f);
     public float shortRange = 1.2f;
     public float midRange = 2.5f;
     public float sharedAttackCD = 2f;
+    public float dodgeStartTime;
+    public bool dodgeSuccessFlag = false;
+    public float dodgeCheckWindow = 0.3f; // å¯è°ƒ
 
     private float lastAttackTime = -10f;
     private float lastDodgeTime = -10f;
     private int facingDirection = 1;
 
+    //å¥–åŠ±æœºåˆ¶
+    private float rewardBuffer = 0f;
+    bool attackHitFlag = false;
+
+    //å¼ºåŒ–å­¦ä¹ 
+    QLearningBrain brain = new QLearningBrain();
+    RLState lastState;
+    int lastAction;
+    bool hasLastState = false;
+
+    public enum AIType
+    {
+        Scripted,
+        QLearning,
+        MLAgents
+    }
+
+    public enum RLAction
+    {
+        Chase,
+        AttackShort,
+        AttackMid,
+        Dodge,
+        Idle
+    }
+
+    struct RLState
+    {
+        public int distanceLevel; // 0=è¿‘ 1=ä¸­ 2=è¿œ
+        public int hpLevel;       // 0=ä½ 1=ä¸­ 2=é«˜
+    }
+
     void Start()
     {
-        //Éú³ÉÊ±×Ô¶¯Ñ°ÕÒÍæ¼Ò
+        //ç”Ÿæˆæ—¶è‡ªåŠ¨å¯»æ‰¾ç©å®¶
         if (player == null)
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -77,7 +116,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             }
             else
             {
-                Debug.LogError($"{gameObject.name} ÕÒ²»µ½ Tag Îª Player µÄÎïÌå£¡Çë¼ì²é³¡¾°£¡");
+                Debug.LogError($"{gameObject.name} æ‰¾ä¸åˆ° Tag ä¸º Player çš„ç‰©ä½“ï¼è¯·æ£€æŸ¥åœºæ™¯ï¼");
             }
         }
 
@@ -87,7 +126,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             skeletonAnimation.AnimationState.Complete += HandleSpineComplete;
         }
 
-        // ¡¾ĞÂÔö¡¿¶©ÔÄÊÜ»÷´ò¶ÏÓë»÷ÆÆÊÂ¼ş
+        // ã€æ–°å¢ã€‘è®¢é˜…å—å‡»æ‰“æ–­ä¸å‡»ç ´äº‹ä»¶
         if (myStats != null)
         {
             myStats.OnStagger += HandleStagger;
@@ -95,69 +134,92 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             myStats.OnRecover += HandleRecover;
         }
 
+        // è®¢é˜…å‘½ä¸­ç©å®¶äº‹ä»¶
+        if (shortAttackHitbox != null)
+            shortAttackHitbox.OnHitSuccess += OnHitPlayer;
+        if (midAttackHitbox != null)
+            midAttackHitbox.OnHitSuccess += OnHitPlayer;
+
+        if (aiType == AIType.QLearning)
+        {
+            brain.LoadQTable();
+            // å®šæ—¶è°ƒç”¨å­¦ä¹ 
+            InvokeRepeating(nameof(RunQLearning), 0f, 0.2f);
+        }
+
+        // è®¢é˜…é—ªé¿æˆæœäº‹ä»¶
+        myStats.OnDodgedAttack += OnSuccessfulDodge;
+
         stateTimer = Random.Range(minIdleTime, maxIdleTime);
     }
 
     void OnDestroy()
     {
-        // Ñø³ÉºÃÏ°¹ß£¬Ïú»ÙÊ±È¡Ïû¶©ÔÄ
+        // å…»æˆå¥½ä¹ æƒ¯ï¼Œé”€æ¯æ—¶å–æ¶ˆè®¢é˜…
         if (myStats != null)
         {
             myStats.OnStagger -= HandleStagger;
             myStats.OnBroken -= HandleBroken;
             myStats.OnRecover -= HandleRecover;
+            myStats.OnDodgedAttack -= OnSuccessfulDodge;
         }
     }
 
-    // --- ×´Ì¬ÏìÓ¦·½·¨ ---
+    // --- çŠ¶æ€å“åº”æ–¹æ³• ---
 
-    // 1. ÏìÓ¦Ğ¡½©Ö± (Á¦¶ÈÅĞ¶¨Í¨¹ı)
+    // 1. å“åº”å°åƒµç›´ (åŠ›åº¦åˆ¤å®šé€šè¿‡)
     void HandleStagger()
     {
-        if (currentState == State.Broken) return; // Èç¹ûÒÑ¾­±»»÷ÆÆÔÚµØÁË£¬¾Í²»ÏìÓ¦Ğ¡½©Ö±
+        rewardBuffer -= 1.0f; // è¢«æ‰“æƒ©ç½š
+
+        if (currentState == State.Broken) return; // å¦‚æœå·²ç»è¢«å‡»ç ´åœ¨åœ°äº†ï¼Œå°±ä¸å“åº”å°åƒµç›´
 
         StopCurrentActions();
         currentState = State.Staggered;
-        PlayAnimation(hitAnim, false, true); // Ç¿ÖÆ²¥·ÅÊÜ»÷¶¯»­
+        PlayAnimation(hitAnim, false, true); // å¼ºåˆ¶æ’­æ”¾å—å‡»åŠ¨ç”»
     }
 
-    // 2. ÏìÓ¦»÷ÆÆ (ÈÍĞÔ²Û¹éÁã)
+    // 2. å“åº”å‡»ç ´ (éŸ§æ€§æ§½å½’é›¶)
     void HandleBroken()
     {
+        rewardBuffer -= 2.0f; // è¢«æ‰“å‡ºå‡»ç ´
+
         StopCurrentActions();
         currentState = State.Broken;
-        PlayAnimation(brokenAnim, true, true); // Ç¿ÖÆ²¥·Å»÷ÆÆ¶¯»­ (Ñ­»·¹òµØµÈ)
+        PlayAnimation(brokenAnim, true, true); // å¼ºåˆ¶æ’­æ”¾å‡»ç ´åŠ¨ç”» (å¾ªç¯è·ªåœ°ç­‰)
     }
 
-    // 3. ´Ó»÷ÆÆ»Ö¸´
+    // 3. ä»å‡»ç ´æ¢å¤
     void HandleRecover()
     {
         if (currentState == State.Broken)
         {
             currentState = State.Chasing;
-            hasAggro = true; // °¤Íê´òÁ¢¿Ì¼Ç³ğ
+            hasAggro = true; // æŒ¨å®Œæ‰“ç«‹åˆ»è®°ä»‡
         }
     }
 
-    // ÖĞ¶Ïµ±Ç°µÄÈÎºÎĞĞ¶¯£¨¹¥»÷ÅĞ¶¨¡¢Î»ÒÆĞ­³ÌµÈ£©
+    // ä¸­æ–­å½“å‰çš„ä»»ä½•è¡ŒåŠ¨ï¼ˆæ”»å‡»åˆ¤å®šã€ä½ç§»åç¨‹ç­‰ï¼‰
     void StopCurrentActions()
     {
         StopAllCoroutines();
-        rb.velocity = Vector2.zero; // Í£²½
+        rb.velocity = Vector2.zero; // åœæ­¥
         if (shortAttackHitbox != null) shortAttackHitbox.StopDamageCalculation();
         if (midAttackHitbox != null) midAttackHitbox.StopDamageCalculation();
     }
 
     void Update()
     {
+        DrawDebug();
+
         if (player == null) return;
 
-        // ¡¾ĞŞ¸Ä¡¿½©Ö±»òÆÆ·ÀÊ±£¬Í£Ö¹Ö´ĞĞºóĞø AI Âß¼­
+        // ã€ä¿®æ”¹ã€‘åƒµç›´æˆ–ç ´é˜²æ—¶ï¼Œåœæ­¢æ‰§è¡Œåç»­ AI é€»è¾‘
         if (currentState == State.Staggered || currentState == State.Broken ||
-            currentState == State.Attacking || currentState == State.Dodging)
+            currentState == State.Attacking || currentState == State.Dodging || currentState == State.Dead)
             return;
 
-        // ³ğºŞ¼ì²â
+        // ä»‡æ¨æ£€æµ‹
         if (!hasAggro)
         {
             if (CanSeePlayer())
@@ -191,15 +253,136 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             }
         }
 
-        // ×·»÷Óë³öÕĞÂß¼­
+        // è¿½å‡»ä¸å‡ºæ‹›é€»è¾‘
         SetFacingDirection(player.position.x > transform.position.x ? 1 : -1);
 
         float distanceToPlayerBody = Vector2.Distance(transform.position, player.position);
 
+        // â­ å†³ç­–åˆ†æµç‚¹ï¼ˆæ ¸å¿ƒï¼‰
+        if (aiType == AIType.QLearning)
+        {
+            return;
+        }
+        else if (aiType == AIType.MLAgents)
+        {
+            RunMLAgents();
+            return;
+        }
+        else
+        {
+            RunScriptedAI(); // â† åŸé€»è¾‘
+        }
+    }
+
+    RLState GetState()
+    {
+        RLState s = new RLState();
+
+        float dist = Vector2.Distance(transform.position, player.position);
+
+        if (dist < shortRange) s.distanceLevel = 0;
+        else if (dist < midRange) s.distanceLevel = 1;
+        else s.distanceLevel = 2;
+
+        float hpPercent = myStats.currentHealth / myStats.maxHealth;
+
+        if (hpPercent < 0.3f) s.hpLevel = 0;
+        else if (hpPercent < 0.7f) s.hpLevel = 1;
+        else s.hpLevel = 2;
+
+        return s;
+    }
+
+    void RunQLearning()
+    {
+        if (currentState == State.Attacking ||
+        currentState == State.Dodging ||
+        currentState == State.Staggered ||
+        currentState == State.Broken ||
+        currentState == State.Dead)
+            return;
+
+        RLState state = GetState();
+
+        int action = brain.ChooseAction(state.distanceLevel, state.hpLevel);
+
+        // æ‰§è¡ŒåŠ¨ä½œ
+        switch ((RLAction)action)
+        {
+            case RLAction.Chase:
+                DoChase();
+                break;
+
+            case RLAction.AttackShort:
+                if (Time.time >= lastAttackTime + sharedAttackCD)
+                    DoShortAttack();
+                break;
+
+            case RLAction.AttackMid:
+                if (Time.time >= lastAttackTime + sharedAttackCD)
+                    DoMidAttack();
+                break;
+
+            case RLAction.Dodge:
+                if (Time.time >= lastDodgeTime + dodgeCooldown)
+                {
+                    if (currentState != State.Dead)
+                    {
+                        DoDodge();
+                    }
+                    else
+                    {
+                        return;
+                    }
+
+                }
+                break;
+
+            case RLAction.Idle:
+                DoIdle();
+                break;
+        }
+
+        // ç®€å•å¥–åŠ±ï¼ˆä½ åé¢å¯ä»¥ä¼˜åŒ–ï¼‰
+        float reward = CalculateReward();
+
+        if (hasLastState)
+        {
+            brain.UpdateQ(
+                lastState.distanceLevel,
+                lastState.hpLevel,
+                lastAction,
+                reward,
+                state.distanceLevel,
+                state.hpLevel
+            );
+        }
+
+        lastState = state;
+        lastAction = action;
+        hasLastState = true;
+    }
+
+    void RunMLAgents()
+    {
+
+    }
+
+    void RunScriptedAI()
+    {
+        float distanceToPlayerBody = Vector2.Distance(transform.position, player.position);
+
         if (distanceToPlayerBody <= shortRange && Time.time >= lastDodgeTime + dodgeCooldown)
         {
-            StartCoroutine(DodgeRoutine());
-            return;
+            if (currentState != State.Dead)
+            {
+                StartCoroutine(DodgeRoutine());
+                return;
+            }
+            else
+            {
+                return;
+            }
         }
 
         Vector2 attackCenter = GetAttackDecisionCenter();
@@ -211,7 +394,6 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             return;
         }
 
-        // ×·»÷ÒÆ¶¯
         if (distanceToAttackCenter > shortRange)
         {
             if (IsLedgeAhead())
@@ -232,6 +414,101 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         }
     }
 
+    void DoChase()
+    {
+        if (IsLedgeAhead())
+        {
+            rb.velocity = new Vector2(0, rb.velocity.y);
+            PlayAnimation(idleAnim, true);
+        }
+        else
+        {
+            rb.velocity = new Vector2(facingDirection * moveSpeed, rb.velocity.y);
+            PlayAnimation(runAnim, true);
+        }
+    }
+
+    void DoIdle()
+    {
+        rb.velocity = new Vector2(0, rb.velocity.y);
+        PlayAnimation(idleAnim, true);
+    }
+
+    void DoAttack(float distance)
+    {
+        TriggerAttack(distance);
+    }
+
+    void DoShortAttack()
+    {
+        currentState = State.Attacking;
+        rb.velocity = new Vector2(0, rb.velocity.y);
+        PlayAnimation(attack1Anim, false);
+    }
+
+    void DoMidAttack()
+    {
+        currentState = State.Attacking;
+        rb.velocity = new Vector2(0, rb.velocity.y);
+        PlayAnimation(attack2Anim, false);
+    }
+
+    void DoDodge()
+    {
+        StartCoroutine(DodgeRoutine());
+    }
+
+    float CalculateReward()
+    {
+        float reward = -0.01f; // æ—¶é—´æƒ©ç½š
+
+        reward += rewardBuffer;
+
+        if (dodgeSuccessFlag)
+        {
+            reward += 3.0f; // é—ªé¿æˆåŠŸå¥–åŠ±
+            dodgeSuccessFlag = false;
+        }
+
+        if (lastAction == (int)RLAction.Dodge && !dodgeSuccessFlag)
+        {
+            reward -= 0.2f; // ç©ºé—ªæƒ©ç½š
+        }
+
+        rewardBuffer = 0f; // ç”¨å®Œæ¸…ç©ºï¼ˆéå¸¸é‡è¦ï¼‰
+
+        return reward;
+    }
+
+    void OnHitPlayer(IDamageable target)
+    {
+        // åˆ¤æ–­æ˜¯ä¸æ˜¯ç©å®¶
+        if (target is PlayerStats)
+        {
+            if (lastAction == (int)RLAction.AttackShort)
+            {
+                rewardBuffer += 1.0f; // æ­£å¥–åŠ±
+            }
+
+            if (lastAction == (int)RLAction.AttackMid)
+            {
+                rewardBuffer += 1.0f;
+            }
+            attackHitFlag = true; //æ ‡è®°å‘½ä¸­
+        }
+    }
+
+    void OnSuccessfulDodge()
+    {
+        if (currentState != State.Dodging) return;
+
+        // å¿…é¡»åœ¨æ—¶é—´çª—å£å†…
+        if (Time.time - dodgeStartTime <= dodgeCheckWindow)
+        {
+            dodgeSuccessFlag = true;
+        }
+    }
+
     void PlayAnimation(string animName, bool loop, bool force = false)
     {
         if (skeletonAnimation == null) return;
@@ -248,14 +525,14 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     }
 
     bool IsLedgeAhead()
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         if (ledgeCheck == null) return false;
         RaycastHit2D hit = Physics2D.Raycast(ledgeCheck.position, Vector2.down, ledgeCheckDist, groundLayer);
         return hit.collider == null;
     }
 
     bool CanSeePlayer()
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         float dist = Vector2.Distance(transform.position, player.position);
         if (dist > visionRange) return false;
         int dirToPlayer = player.position.x > transform.position.x ? 1 : -1;
@@ -266,7 +543,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     }
 
     void HandleWanderAndIdle()
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         stateTimer -= Time.deltaTime;
         if (currentState == State.Idle)
         {
@@ -298,7 +575,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     }
 
     void SetFacingDirection(int dir)
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         if (facingDirection == dir) return;
         facingDirection = dir;
         if (skeletonAnimation != null) skeletonAnimation.Skeleton.ScaleX = facingDirection;
@@ -313,7 +590,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     }
 
     void FlipHitboxLocalX(CombatContactSender hitbox)
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         if (hitbox != null)
         {
             Vector3 localPos = hitbox.transform.localPosition;
@@ -323,14 +600,18 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     }
 
     Vector2 GetAttackDecisionCenter()
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         return (Vector2)transform.position + new Vector2(attackDecisionOffset.x * facingDirection, attackDecisionOffset.y);
     }
 
     IEnumerator DodgeRoutine()
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    {
         currentState = State.Dodging;
-        myStats.isInvincible = true; // ¿ªÆôÎŞµĞ
+
+        dodgeStartTime = Time.time;
+        dodgeSuccessFlag = false;
+
+        myStats.isInvincible = true; // å¼€å¯æ— æ•Œ
         lastDodgeTime = Time.time;
         PlayAnimation(dodgeAnim, false, true);
         rb.velocity = new Vector2(-facingDirection * dodgeSpeed, rb.velocity.y);
@@ -338,20 +619,21 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         while (timer < dodgeDuration)
         {
             timer += Time.deltaTime;
-            // ËÙ¶ÈËæ×ÅÊ±¼äµİ¼õ (Lerp)£¬Ä£ÄâË«½ÅÄ¦²ÁµØÃæµÄ¸Ğ¾õ£¬Ïû³ıÆ¯ÒÆ¸Ğ
+            // é€Ÿåº¦éšç€æ—¶é—´é€’å‡ (Lerp)ï¼Œæ¨¡æ‹ŸåŒè„šæ‘©æ“¦åœ°é¢çš„æ„Ÿè§‰ï¼Œæ¶ˆé™¤æ¼‚ç§»æ„Ÿ
             float currentXVel = Mathf.Lerp(-facingDirection * dodgeSpeed, 0f, timer / dodgeDuration);
             rb.velocity = new Vector2(currentXVel, rb.velocity.y);
             yield return null;
         }
         yield return new WaitForSeconds(dodgeDuration);
         rb.velocity = new Vector2(0, rb.velocity.y);
-        myStats.isInvincible = false; // ¹Ø±ÕÎŞµĞ
+        myStats.isInvincible = false; // å…³é—­æ— æ•Œ
         currentState = State.Chasing;
     }
 
     void TriggerAttack(float currentDecisionDistance)
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         currentState = State.Attacking;
+        attackHitFlag = false;
         rb.velocity = new Vector2(0, rb.velocity.y);
         bool useShortAttack = (currentDecisionDistance <= shortRange) && (Random.value > 0.5f);
         string animToPlay = useShortAttack ? attack1Anim : attack2Anim;
@@ -360,17 +642,22 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
     public void TriggerDeath()
     {
+        rewardBuffer -= 5.0f; // æ­»äº¡æƒ©ç½š
+
+        OnApplicationQuit();
+
         StopCurrentActions();
         currentState = State.Dead;
-        PlayAnimation(deathAnim, false, true);  // Ç¿ÖÆ²¥·ÅËÀÍö¶¯»­£¨²»Ñ­»·£©
 
-        // ÖØÒª£ºÈ¡ÏûËùÓĞÊäÈëÏìÓ¦
+        // é‡è¦ï¼šå–æ¶ˆæ‰€æœ‰è¾“å…¥å“åº”
         rb.velocity = Vector2.zero;
-        rb.isKinematic = true;  // ·ÀÖ¹ËÀÍöºó»¹ÊÜÎïÀíÓ°Ïì
+        rb.isKinematic = true;  // é˜²æ­¢æ­»äº¡åè¿˜å—ç‰©ç†å½±å“
+
+        PlayAnimation(deathAnim, false, true);  // å¼ºåˆ¶æ’­æ”¾æ­»äº¡åŠ¨ç”»ï¼ˆä¸å¾ªç¯ï¼‰
     }
 
     void HandleSpineEvent(TrackEntry trackEntry, Spine.Event e)
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         if (e.Data.Name == "OnAttack")
         {
             if (trackEntry.Animation.Name == attack1Anim && shortAttackHitbox != null)
@@ -387,7 +674,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     }
 
     IEnumerator StopDamageRoutine(CombatContactSender activeHitbox)
-    { /* ...Ô­Âß¼­±£³Ö²»±ä... */
+    { /* ...åŸé€»è¾‘ä¿æŒä¸å˜... */
         yield return new WaitForSeconds(0.1f);
         if (activeHitbox != null) activeHitbox.StopDamageCalculation();
     }
@@ -401,25 +688,82 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
             if (shortAttackHitbox != null) shortAttackHitbox.StopDamageCalculation();
             if (midAttackHitbox != null) midAttackHitbox.StopDamageCalculation();
+
+            // ç©ºAæƒ©ç½š
+            if (!attackHitFlag)
+            {
+                rewardBuffer -= 0.3f;
+            }
         }
         else if (trackEntry.Animation.Name == dodgeAnim)
         {
             currentState = State.Chasing;
         }
-        // ¡¾ĞÂÔö¡¿Èç¹ûĞ¡½©Ö±¶¯»­²¥·ÅÍê±Ï£¬»Ö¸´×·»÷
+        // å¦‚æœå°åƒµç›´åŠ¨ç”»æ’­æ”¾å®Œæ¯•ï¼Œæ¢å¤è¿½å‡»
         else if (trackEntry.Animation.Name == hitAnim)
         {
             if (currentState == State.Staggered)
             {
                 currentState = State.Chasing;
-                // ÎªÁË·ÀÖ¹¹ÖÎï¸Õ³öÓ²Ö±Ë²¼äÃë¿ª¹¥»÷£¬¸øËüÖØÖÃÒ»ÏÂ¹¥»÷Ê±¼ä
+                // ä¸ºäº†é˜²æ­¢æ€ªç‰©åˆšå‡ºç¡¬ç›´ç¬é—´ç§’å¼€æ”»å‡»ï¼Œç»™å®ƒé‡ç½®ä¸€ä¸‹æ”»å‡»æ—¶é—´
                 lastAttackTime = Time.time;
             }
         }
         else if (trackEntry.Animation.Name == deathAnim)
         {
-            Destroy(gameObject);   // ¶¯»­²¥Íê²ÅÏú»Ù
-            Debug.Log(transform.name + " ËÀÍö¶¯»­²¥·ÅÍê±Ï£¬ÒÑÏú»Ù¡£");
+            Destroy(gameObject);   // åŠ¨ç”»æ’­å®Œæ‰é”€æ¯
+            Debug.Log(transform.name + " æ­»äº¡åŠ¨ç”»æ’­æ”¾å®Œæ¯•ï¼Œå·²é”€æ¯ã€‚");
         }
+    }
+
+    public void OnApplicationQuit()
+    {
+        if (aiType == AIType.QLearning)
+        {
+            brain.SaveQTable();
+        }
+    }
+
+    void OnGUI()
+    {
+        if (aiType != AIType.QLearning) return;
+
+        GUI.Label(new Rect(10, 10, 300, 20), "State: " + lastState.distanceLevel + "," + lastState.hpLevel);
+        GUI.Label(new Rect(10, 30, 300, 20), "Action: " + ((RLAction)lastAction).ToString());
+        GUI.Label(new Rect(10, 50, 300, 20), "RewardBuffer: " + rewardBuffer);
+
+        var q = brain.GetQValues(lastState.distanceLevel, lastState.hpLevel);
+
+        GUI.Label(new Rect(10, 80, 400, 20), $"Q: {q[0]:F2} {q[1]:F2} {q[2]:F2} {q[3]:F2}");
+    }
+
+    void DrawDebug()
+    {
+        if (lastAction == (int)RLAction.Chase)
+            Debug.DrawLine(transform.position, player.position, Color.green);
+
+        if (lastAction == (int)RLAction.AttackShort)
+            Debug.DrawRay(transform.position, Vector2.right * facingDirection, Color.red);
+
+        if (lastAction == (int)RLAction.AttackMid)
+            Debug.DrawRay(transform.position, Vector2.right * facingDirection, Color.yellow);
+
+        if (lastAction == (int)RLAction.Dodge)
+            Debug.DrawRay(transform.position, Vector2.left * facingDirection, Color.blue);
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        // è¿‘è·ç¦»ï¼ˆçº¢è‰²ï¼‰
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, shortRange);
+
+        // ä¸­è·ç¦»ï¼ˆé»„è‰²ï¼‰
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, midRange);
+
+        // è¿œè·ç¦»ï¼ˆç°è‰² = è§†é‡èŒƒå›´ï¼‰
+        Gizmos.color = Color.gray;
+        Gizmos.DrawWireSphere(transform.position, visionRange);
     }
 }

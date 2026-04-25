@@ -1,11 +1,26 @@
+using System;
 using UnityEngine;
 
 public class EnemyStats : CharacterStats
 {
+    public event Action OnDodgedAttack;
+
     protected override void Awake()
     {
         base.Awake();
         // 可以在这里初始化怪物的特定血量、防御等
+    }
+
+    public override void TakeDamage(AttackImpact impact)
+    {
+        // 无敌时判定为“闪避成功”
+        if (isInvincible && impact.damage > 0)
+        {
+            OnDodgedAttack?.Invoke();
+            return; // 不受伤害
+        }
+
+        base.TakeDamage(impact);
     }
 
     public override void Die()
