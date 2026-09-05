@@ -101,6 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 1
   lifeTime: 3
+  destroyOnHit: 1
   contactSender: {fileID: 412376830458102045}
 --- !u!114 &412376830458102045
 MonoBehaviour:
@@ -117,7 +118,7 @@ MonoBehaviour:
   ownerStats: {fileID: 0}
   hitboxCollider: {fileID: 8647747171690450934}
   baseImpact:
-    interruptPower: 3
+    interruptPower: 2
     poiseDamage: 0
     damage: 0
   skillDamageMultiplier: 0.2

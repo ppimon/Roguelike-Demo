@@ -1,8 +1,9 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using Spine;
 using Spine.Unity;
-using Spine;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEngine;
 
 [AddComponentMenu("自定义 AI / 普通敌人：近战")]
 public class EnemyAI_NormalMelee : MonoBehaviour
@@ -63,14 +64,14 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     public Vector2 attackDecisionOffset = new Vector2(0.5f, 0.5f);
     public float shortRange = 1.2f;
     public float midRange = 2.5f;
-    public float sharedAttackCD = 2f;
+    public float sharedAttackCD = 1.5f;
     public float dodgeStartTime;
     public bool dodgeSuccessFlag = false;
     public float dodgeCheckWindow = 0.3f; // 可调
 
-    private float lastAttackTime = -10f;
-    private float lastDodgeTime = -10f;
-    private int facingDirection = 1;
+    public float lastAttackTime = -10f;
+    public float lastDodgeTime = -10f;
+    public int facingDirection = 1;
 
     //奖励机制
     private float rewardBuffer = 0f;
@@ -81,6 +82,8 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     RLState lastState;
     int lastAction;
     bool hasLastState = false;
+    public EnemyMLAgent mlAgent;
+    float stateTimerForce = 0f;
 
     public enum AIType
     {
@@ -104,8 +107,40 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         public int hpLevel;       // 0=低 1=中 2=高
     }
 
+    // 获取当前帧合法的动作列表
+    List<int> GetValidActions()
+    {
+        List<int> validActions = new List<int>();
+
+        // 追击和发呆永远是合法的
+        validActions.Add((int)RLAction.Chase);
+        validActions.Add((int)RLAction.Idle);
+
+        // 如果攻击不在 CD 中，才把攻击加入可选列表
+        if (Time.time >= lastAttackTime + sharedAttackCD)
+        {
+            validActions.Add((int)RLAction.AttackShort);
+            validActions.Add((int)RLAction.AttackMid);
+        }
+
+        // 如果闪避不在 CD 中，才把闪避加入可选列表
+        if (Time.time >= lastDodgeTime + dodgeCooldown)
+        {
+            validActions.Add((int)RLAction.Dodge);
+        }
+
+        return validActions;
+    }
+
     void Start()
     {
+        if (aiType == AIType.Scripted)
+        {
+            sharedAttackCD = 2.0f;
+        }
+
+        currentState = State.Chasing;
+
         //生成时自动寻找玩家
         if (player == null)
         {
@@ -170,7 +205,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     // 1. 响应小僵直 (力度判定通过)
     void HandleStagger()
     {
-        rewardBuffer -= 1.0f; // 被打惩罚
+        rewardBuffer -= 0.5f; // 被打惩罚
 
         if (currentState == State.Broken) return; // 如果已经被击破在地了，就不响应小僵直
 
@@ -182,7 +217,9 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     // 2. 响应击破 (韧性槽归零)
     void HandleBroken()
     {
-        rewardBuffer -= 2.0f; // 被打出击破
+        if (currentState == State.Dead) return;
+
+        rewardBuffer -= 5.0f; // 被打出击破
 
         StopCurrentActions();
         currentState = State.Broken;
@@ -192,6 +229,8 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     // 3. 从击破恢复
     void HandleRecover()
     {
+        if (currentState == State.Dead) return;
+
         if (currentState == State.Broken)
         {
             currentState = State.Chasing;
@@ -214,10 +253,25 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
         if (player == null) return;
 
-        // 【修改】僵直或破防时，停止执行后续 AI 逻辑
+        // 僵直或破防时，停止执行后续 AI 逻辑
         if (currentState == State.Staggered || currentState == State.Broken ||
             currentState == State.Attacking || currentState == State.Dodging || currentState == State.Dead)
+        {
+            stateTimerForce += Time.deltaTime;
+
+            if (stateTimerForce > 1.2f) // 可调（1~2秒）
+            {
+                Debug.LogWarning("状态卡死，强制恢复: " + currentState);
+
+                currentState = State.Chasing;
+                stateTimerForce = 0f;
+            }
             return;
+        }
+        else
+        {
+            stateTimerForce = 0f;
+        }
 
         // 仇恨检测
         if (!hasAggro)
@@ -229,7 +283,11 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             }
             else
             {
-                HandleWanderAndIdle();
+                // 只有纯脚本模式才强制使用固定游荡逻辑
+                if (aiType == AIType.Scripted)
+                {
+                    HandleWanderAndIdle();
+                }
                 return;
             }
         }
@@ -265,7 +323,6 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         }
         else if (aiType == AIType.MLAgents)
         {
-            RunMLAgents();
             return;
         }
         else
@@ -304,7 +361,11 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
         RLState state = GetState();
 
-        int action = brain.ChooseAction(state.distanceLevel, state.hpLevel);
+        // 获取当前合法的动作
+        List<int> validActions = GetValidActions();
+
+        // 传给大脑做决策
+        int action = brain.ChooseAction(state.distanceLevel, state.hpLevel, validActions);
 
         // 执行动作
         switch ((RLAction)action)
@@ -314,28 +375,15 @@ public class EnemyAI_NormalMelee : MonoBehaviour
                 break;
 
             case RLAction.AttackShort:
-                if (Time.time >= lastAttackTime + sharedAttackCD)
-                    DoShortAttack();
+                DoShortAttack();
                 break;
 
             case RLAction.AttackMid:
-                if (Time.time >= lastAttackTime + sharedAttackCD)
-                    DoMidAttack();
+                DoMidAttack();
                 break;
 
             case RLAction.Dodge:
-                if (Time.time >= lastDodgeTime + dodgeCooldown)
-                {
-                    if (currentState != State.Dead)
-                    {
-                        DoDodge();
-                    }
-                    else
-                    {
-                        return;
-                    }
-
-                }
+                DoDodge();
                 break;
 
             case RLAction.Idle:
@@ -363,9 +411,12 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         hasLastState = true;
     }
 
-    void RunMLAgents()
+    // 让大脑提取积攒的奖励并清空
+    public float ConsumeRewardBuffer()
     {
-
+        float r = rewardBuffer;
+        rewardBuffer = 0f;
+        return r;
     }
 
     void RunScriptedAI()
@@ -414,8 +465,10 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         }
     }
 
-    void DoChase()
+    public void DoChase()
     {
+        if (currentState == State.Dead) return;
+
         if (IsLedgeAhead())
         {
             rb.velocity = new Vector2(0, rb.velocity.y);
@@ -428,33 +481,33 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         }
     }
 
-    void DoIdle()
+    public void DoIdle()
     {
+        if (currentState == State.Dead) return;
         rb.velocity = new Vector2(0, rb.velocity.y);
         PlayAnimation(idleAnim, true);
     }
 
-    void DoAttack(float distance)
+    public void DoShortAttack()
     {
-        TriggerAttack(distance);
-    }
-
-    void DoShortAttack()
-    {
+        if (currentState == State.Dead) return;
         currentState = State.Attacking;
         rb.velocity = new Vector2(0, rb.velocity.y);
-        PlayAnimation(attack1Anim, false);
+        PlayAnimation(attack1Anim, false, true);
     }
 
-    void DoMidAttack()
+    public void DoMidAttack()
     {
+        if (currentState == State.Dead) return;
         currentState = State.Attacking;
         rb.velocity = new Vector2(0, rb.velocity.y);
-        PlayAnimation(attack2Anim, false);
+        PlayAnimation(attack2Anim, false, true);
     }
 
-    void DoDodge()
+    public void DoDodge()
     {
+        if (currentState == State.Dead) return;
+        if (currentState == State.Dodging) return; // 防御性编程，防止重复触发协程
         StartCoroutine(DodgeRoutine());
     }
 
@@ -466,13 +519,13 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
         if (dodgeSuccessFlag)
         {
-            reward += 3.0f; // 闪避成功奖励
+            reward += 5.0f; // 闪避成功奖励
             dodgeSuccessFlag = false;
         }
 
         if (lastAction == (int)RLAction.Dodge && !dodgeSuccessFlag)
         {
-            reward -= 0.2f; // 空闪惩罚
+            reward -= 0.5f; // 空闪惩罚
         }
 
         rewardBuffer = 0f; // 用完清空（非常重要）
@@ -487,12 +540,12 @@ public class EnemyAI_NormalMelee : MonoBehaviour
         {
             if (lastAction == (int)RLAction.AttackShort)
             {
-                rewardBuffer += 1.0f; // 正奖励
+                rewardBuffer += 1.2f; // 正奖励
             }
 
             if (lastAction == (int)RLAction.AttackMid)
             {
-                rewardBuffer += 1.0f;
+                rewardBuffer += 0.8f;
             }
             attackHitFlag = true; //标记命中
         }
@@ -502,16 +555,23 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     {
         if (currentState != State.Dodging) return;
 
-        // 必须在时间窗口内
-        if (Time.time - dodgeStartTime <= dodgeCheckWindow)
+        float timing = Time.time - dodgeStartTime;
+
+        if (timing <= dodgeCheckWindow)
         {
             dodgeSuccessFlag = true;
+
+            // ⭐ 新增：根据时机给奖励
+            float precision = 1f - (timing / dodgeCheckWindow);
+
+            rewardBuffer += precision * 3f;
         }
     }
 
     void PlayAnimation(string animName, bool loop, bool force = false)
     {
         if (skeletonAnimation == null) return;
+        if (currentState == State.Dead && animName != deathAnim) return;
         var currentTrack = skeletonAnimation.AnimationState.GetCurrent(0);
         if (!force && currentTrack != null && !currentTrack.Loop && !currentTrack.IsComplete)
         {
@@ -606,6 +666,8 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
     IEnumerator DodgeRoutine()
     {
+        if (currentState == State.Dead) yield break;
+
         currentState = State.Dodging;
 
         dodgeStartTime = Time.time;
@@ -642,18 +704,27 @@ public class EnemyAI_NormalMelee : MonoBehaviour
 
     public void TriggerDeath()
     {
-        rewardBuffer -= 5.0f; // 死亡惩罚
-
         OnApplicationQuit();
 
         StopCurrentActions();
+
         currentState = State.Dead;
 
         // 重要：取消所有输入响应
         rb.velocity = Vector2.zero;
         rb.isKinematic = true;  // 防止死亡后还受物理影响
 
-        PlayAnimation(deathAnim, false, true);  // 强制播放死亡动画（不循环）
+        // 如果处于 MLAgents 模式，通知外置大脑被击杀
+        if (aiType == AIType.MLAgents && mlAgent != null)
+        {
+            mlAgent.EndEpisode();    // 结束回合
+
+            mlAgent.enabled = false;
+        }
+
+        Destroy(gameObject);
+
+        //PlayAnimation(deathAnim, false, true);  // 强制播放死亡动画（不循环）
     }
 
     void HandleSpineEvent(TrackEntry trackEntry, Spine.Event e)
@@ -692,7 +763,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
             // 空A惩罚
             if (!attackHitFlag)
             {
-                rewardBuffer -= 0.3f;
+                rewardBuffer -= 0.2f;
             }
         }
         else if (trackEntry.Animation.Name == dodgeAnim)
@@ -720,7 +791,7 @@ public class EnemyAI_NormalMelee : MonoBehaviour
     {
         if (aiType == AIType.QLearning)
         {
-            brain.SaveQTable();
+            //brain.SaveQTable();
         }
     }
 

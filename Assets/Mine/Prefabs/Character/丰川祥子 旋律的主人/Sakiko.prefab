@@ -149,7 +149,18 @@ MonoBehaviour:
   skeletonAnimation: {fileID: 6281909151703509224}
   myStats: {fileID: 5633222197609803390}
   attackHitbox: {fileID: 7910846092059959203}
+  EnemyAI: {fileID: 0}
   playerHitbox: {fileID: 4792978114645387873}
+  attackRectWidth: 1.5
+  attackRectHeight: 1.5
+  attackRectOffset: {x: 0, y: 0}
+  autoCombatEnabled: 0
+  autoCombatSearchRadius: 10
+  retreatMinTime: 2
+  retreatMaxTime: 6
+  isAttacking: 0
+  attackStartTime: 0
+  attackWindupDuration: 0.25
 --- !u!114 &5633222197609803390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -318,7 +329,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8675670858942219373}
-  m_Enabled: 0
+  m_Enabled: 1
   m_Density: 1
   m_Material: {fileID: 0}
   m_IncludeLayers:

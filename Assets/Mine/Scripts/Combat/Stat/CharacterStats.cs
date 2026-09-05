@@ -137,4 +137,11 @@ public class CharacterStats : MonoBehaviour, IDamageable
         Debug.Log(transform.name + " À¿Õˆ¡À.");
         OnDeath?.Invoke();
     }
+
+    public void ResetStats()
+    {
+        currentHealth = maxHealth;
+        isDead = false;
+        isInvincible = false;
+    }
 }

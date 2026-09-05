@@ -40,10 +40,12 @@ public class PlayerController : MonoBehaviour
 
     // 状态标志
     private bool isGrounded;
-    private bool isAttacking;
+    public bool isAttacking;
     private bool isJumping;
     private float horizontalInput;
     private bool canCancelAttack = false;
+    public float attackStartTime;
+    public float attackWindupDuration = 0.25f; // 前摇时间
 
     // 自动战斗专用
     private bool isAutoRetreating = false;
@@ -238,6 +240,7 @@ public class PlayerController : MonoBehaviour
     void PerformAttack()
     {
         isAttacking = true;
+        attackStartTime = Time.time;
         canCancelAttack = false;
         float speedMultiplier = (myStats != null) ? myStats.attackSpeed.GetValue() : 1f;
         var track = skeletonAnimation.AnimationState.SetAnimation(0, attackAnim, false);
@@ -326,6 +329,13 @@ public class PlayerController : MonoBehaviour
             if (autoCombatEnabled)
                 pendingRetreat = true;
         }
+    }
+
+    public float GetAttackWindupProgress()
+    {
+        if (!isAttacking) return 0f;
+
+        return Mathf.Clamp01((Time.time - attackStartTime) / attackWindupDuration);
     }
 
     void OnDrawGizmos()

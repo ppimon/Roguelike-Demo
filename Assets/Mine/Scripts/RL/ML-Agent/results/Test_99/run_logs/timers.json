@@ -1,0 +1,42 @@
+{
+    "name": "root",
+    "metadata": {
+        "timer_format_version": "0.1.0",
+        "start_time_seconds": "1781070522",
+        "python_version": "3.6.5 |Anaconda, Inc.| (default, Mar 29 2018, 13:32:41) [MSC v.1900 64 bit (AMD64)]",
+        "command_line_arguments": "D:\\Anaconda\\Scripts\\mlagents-learn MeleeEnemy.yaml --run-id=Test_99",
+        "mlagents_version": "0.28.0",
+        "mlagents_envs_version": "0.28.0",
+        "communication_protocol_version": "1.5.0",
+        "pytorch_version": "1.10.2+cpu",
+        "numpy_version": "1.14.3",
+        "end_time_seconds": "1781070590"
+    },
+    "total": 68.20808670000001,
+    "count": 1,
+    "self": 0.0062235999999984415,
+    "children": {
+        "run_training.setup": {
+            "total": 0.22241609999999998,
+            "count": 1,
+            "self": 0.22241609999999998
+        },
+        "TrainerController.start_learning": {
+            "total": 67.97944700000001,
+            "count": 1,
+            "self": 0.0005861000000066952,
+            "children": {
+                "TrainerController._reset_env": {
+                    "total": 67.9788485,
+                    "count": 1,
+                    "self": 67.9788485
+                },
+                "TrainerController._save_models": {
+                    "total": 1.2400000002799061e-05,
+                    "count": 1,
+                    "self": 1.2400000002799061e-05
+                }
+            }
+        }
+    }
+}

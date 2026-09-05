@@ -206,6 +206,7 @@ MonoBehaviour:
     wallObject: {fileID: 2125056063702390411}
     doorObject: {fileID: 300577181339319873}
     isOccupied: 0
+  roomType: 0
 --- !u!61 &113562974904366823
 BoxCollider2D:
   m_ObjectHideFlags: 0

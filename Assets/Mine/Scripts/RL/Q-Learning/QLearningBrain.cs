@@ -23,21 +23,37 @@ public class QLearningBrain
         return d + "_" + h;
     }
 
-    public int ChooseAction(int d, int h)
+    // QLearningBrain.cs
+    public int ChooseAction(int d, int h, List<int> validActions)
     {
         string key = StateToKey(d, h);
 
         if (!QTable.ContainsKey(key))
             QTable[key] = new float[actionCount];
 
+        // 防御性编程：如果没有合法动作（理论上不会发生，保底返回 Idle）
+        if (validActions == null || validActions.Count == 0)
+            return 4; // 4 是 Idle
+
+        // 随机探索时，只在合法动作中随机
         if (Random.value < epsilon)
-            return Random.Range(0, actionCount);
+        {
+            int randomIndex = Random.Range(0, validActions.Count);
+            return validActions[randomIndex];
+        }
 
+        // 贪心选择时，只对比合法动作的 Q 值
         float[] q = QTable[key];
+        int best = validActions[0];
 
-        int best = 0;
-        for (int i = 1; i < q.Length; i++)
-            if (q[i] > q[best]) best = i;
+        for (int i = 1; i < validActions.Count; i++)
+        {
+            int actionIndex = validActions[i];
+            if (q[actionIndex] > q[best])
+            {
+                best = actionIndex;
+            }
+        }
 
         return best;
     }
